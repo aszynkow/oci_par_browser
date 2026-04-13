@@ -9,9 +9,9 @@ No backend. No login. No OCI account required for the end user. Just a single HT
 
 ## What is it?
 
-When you need to share files with a customer — or receive files from them — you typically have to deal with email attachments, OneDrive links, SFTP servers, or giving someone temporary OCI access. This tool removes all of that friction.
+When you need to share files with a customer - or receive files from them - you typically have to deal with email attachments, OneDrive links, SFTP servers, or giving someone temporary OCI access. This tool removes all of that friction.
 
-You create a **PAR** (Pre-Authenticated Request) on an OCI bucket, share the HTML file + PAR URL, and the customer gets a clean file browser right in their browser — no software to install, no account to create.
+You create a **PAR** (Pre-Authenticated Request) on an OCI bucket, share the HTML file + PAR URL, and the customer gets a clean file browser right in their browser - no software to install, no account to create.
 
 ---
 
@@ -22,8 +22,8 @@ You create a **PAR** (Pre-Authenticated Request) on an OCI bucket, share the HTM
 - ⬆ Upload files via drag-and-drop or file picker (if PAR permits)
 - 🗑 Delete files (if PAR permits)
 - 📊 Real-time upload and download progress panel
-- 🔐 Auto-detects PAR permissions — only shows actions the PAR allows
-- 🗂 Sortable columns — Name, Size, Last Modified
+- 🔐 Auto-detects PAR permissions - only shows actions the PAR allows
+- 🗂 Sortable columns - Name, Size, Last Modified
 - 🍞 Folder navigation with breadcrumb trail
 - 🎨 Oracle Cloud console-style UI
 
@@ -46,7 +46,7 @@ You create a **PAR** (Pre-Authenticated Request) on an OCI bucket, share the HTM
 ├──────┬──────────────────────┬─────────┬────────────────┬────┤
 │  ☐   │ NAME              ↑  │    SIZE │ LAST MODIFIED  │    │
 ├──────┼──────────────────────┼─────────┼────────────────┼────┤
-│  📁  │ designs/             │      —  │      —         │  — │
+│  📁  │ designs/             │      -  │      -         │  - │
 │  ☐📄 │ proposal.pdf         │  2.4 MB │ 12 Jan 2025    │ DL │
 │  ☐🖼 │ architecture.png     │  1.1 MB │ 10 Jan 2025    │ DL │
 │  ☐📋 │ config.json          │   8 KB  │ 09 Jan 2025    │ DL │
@@ -59,7 +59,7 @@ You create a **PAR** (Pre-Authenticated Request) on an OCI bucket, share the HTM
 
 ### 1. Download the tool
 
-Download [`oci-par-browser.html`](./oci-par-browser.html) — that's the entire app.
+Download [`oci-par-browser.html`](./oci-par-browser.html) - that's the entire app.
 
 ### 2. Create a PAR on your OCI bucket
 
@@ -71,7 +71,7 @@ In the OCI Console:
    - **Access Type:** `Permit object reads and writes on this bucket` (or read-only)
    - **Scope:** Bucket (not Object)
    - **Expiry:** Set an appropriate date
-4. Copy the generated URL — you won't see it again
+4. Copy the generated URL - you won't see it again
 
 Or via OCI CLI:
 
@@ -130,13 +130,13 @@ Pre-load lab guides, datasets, or VM images into a bucket. Share the PAR with at
 | `AnyObjectWrite` | ❌ | ❌ | ✅ | ❌ |
 | `AnyObjectReadWrite` | ✅ | ✅ | ✅ | ✅ |
 
-> **Important:** Always use **Bucket** scope — object-scoped PARs point to a single file and cannot be used for browsing.
+> **Important:** Always use **Bucket** scope - object-scoped PARs point to a single file and cannot be used for browsing.
 
 ---
 
 ## Security Considerations
 
-- **PAR URLs grant access to anyone who has them** — treat them like passwords
+- **PAR URLs grant access to anyone who has them** - treat them like passwords
 - Set the shortest expiry that makes sense for your use case
 - Use `AnyObjectRead` unless you specifically need the customer to upload
 - Consider creating a dedicated bucket per customer engagement rather than sharing a bucket
@@ -173,4 +173,4 @@ No backend required. The HTML file makes direct REST calls to OCI using the PAR 
 
 ## Support
 
-Questions or issues — reach out to [adam.szynkowski@oracle.com](mailto:adam.szynkowski@oracle.com)
+Questions or issues - reach out to [adam.szynkowski@oracle.com](mailto:adam.szynkowski@oracle.com)
