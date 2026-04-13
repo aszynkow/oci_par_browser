@@ -1,11 +1,5 @@
 # OCI Object Storage Browser
 
-> **🚀 Open directly in your browser →** [Launch Tool](https://htmlpreview.github.io/?https://github.com/<your-org>/<your-repo>/blob/main/oci-par-browser.html)
->
-> *(Update the link above with your GitHub username and repo name, or [enable GitHub Pages](#option-b-github-pages-permanent-url))*
-
----
-
 
 A lightweight, zero-install browser tool for sharing files with customers via Oracle Cloud Infrastructure (OCI) Object Storage **Pre-Authenticated Requests (PARs)**.
 
@@ -57,38 +51,6 @@ You create a **PAR** (Pre-Authenticated Request) on an OCI bucket, share the HTM
 │  ☐🖼 │ architecture.png     │  1.1 MB │ 10 Jan 2025    │ DL │
 │  ☐📋 │ config.json          │   8 KB  │ 09 Jan 2025    │ DL │
 └──────┴──────────────────────┴─────────┴────────────────┴────┘
-```
-
----
-
-## Opening the Tool
-
-Clicking `oci-par-browser.html` in GitHub shows the source — not the app. Use one of these options to get a clickable link.
-
-### Option A — htmlpreview.github.io (zero setup)
-
-Wrap your raw GitHub file URL with `https://htmlpreview.github.io/?`:
-
-```
-https://htmlpreview.github.io/?https://github.com/<your-org>/<your-repo>/blob/main/oci-par-browser.html
-```
-
-Put that link in your README badge or share it directly with customers. No configuration needed.
-
-### Option B — GitHub Pages (permanent URL)
-
-1. Go to your repo → **Settings** → **Pages**
-2. Source: `Deploy from a branch` → `main` → `/ (root)`
-3. Save — GitHub will publish the site in ~60 seconds
-4. Your tool will be live at:
-   ```
-   https://<your-org>.github.io/<your-repo>/oci-par-browser.html
-   ```
-
-Add a badge to your README:
-
-```markdown
-[![Open Tool](https://img.shields.io/badge/Launch-OCI%20PAR%20Browser-C74634?style=for-the-badge&logo=oracle)](https://<your-org>.github.io/<your-repo>/oci-par-browser.html)
 ```
 
 ---
