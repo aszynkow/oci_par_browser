@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCI Object Storage Browser</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oracle+Sans:wght@300;400;500;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f5;
+    --white: #ffffff;
+    --surface: #ffffff;
+    --surface2: #f9f9f9;
+    --border: #dcdcdc;
+    --border-light: #efefef;
+    --accent: #c74634;
+    --accent-dark: #a3392b;
+    --accent-light: #fdf3f2;
+    --text: #1a1a1a;
+    --text-secondary: #5c5c5c;
+    --text-muted: #8c8c8c;
+    --green: #1a7f37;
+    --green-bg: #eaf5ec;
+    --red: #c74634;
+    --red-bg: #fdf3f2;
+    --blue: #1563a3;
+    --blue-bg: #edf3fb;
+    --yellow: #8a6500;
+    --yellow-bg: #fdf7e3;
+    --header-bg: #312d2a;
+    --header-text: #ffffff;
+    --nav-bg: #ffffff;
+    --selected-bg: #edf3fb;
+    --selected-border: #1563a3;
+    --sort-active: #1563a3;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── OCI-style top bar ── */
+  .oci-header {
+    background: var(--header-bg);
+    padding: 0 20px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .oci-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--header-text);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  .oci-logo svg { flex-shrink: 0; }
+  .oci-logo-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.25); margin: 0 4px; }
+  .oci-logo-sub { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 400; }
+
+  /* ── breadcrumb nav ── */
+  .oci-nav {
+    background: var(--nav-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .oci-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .oci-breadcrumb a {
+    color: var(--blue);
+    cursor: pointer;
+    padding: 0 4px;
+    text-decoration: none;
+  }
+  .oci-breadcrumb a:hover { text-decoration: underline; }
+  .oci-breadcrumb .sep { color: var(--text-muted); margin: 0 2px; }
+  .oci-breadcrumb .current { color: var(--text); padding: 0 4px; }
+
+  /* ── main layout ── */
+  main { flex: 1; padding: 20px 24px; max-width: 1200px; width: 100%; margin: 0 auto; }
+
+  /* ── PAR input card ── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+  .card-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .card-body { padding: 16px; }
+
+  .par-row { display: flex; gap: 8px; align-items: center; }
+  input[type="text"] {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    color: var(--text);
+    background: var(--white);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input[type="text"]:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px rgba(21,99,163,0.15);
+  }
+  input[type="text"]::placeholder { color: var(--text-muted); }
+
+  /* ── OCI-style buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 14px; border-radius: 3px; border: 1px solid transparent;
+    cursor: pointer; font-size: 12px; font-weight: 500;
+    font-family: inherit; transition: all 0.15s; white-space: nowrap;
+    line-height: 1;
+  }
+  .btn-primary {
+    background: var(--accent); color: white; border-color: var(--accent);
+  }
+  .btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+
+  .btn-default {
+    background: var(--white); color: var(--text);
+    border-color: var(--border);
+  }
+  .btn-default:hover { background: var(--surface2); border-color: #b0b0b0; }
+
+  .btn-danger {
+    background: var(--white); color: var(--red);
+    border-color: var(--red);
+  }
+  .btn-danger:hover { background: var(--red-bg); }
+
+  .btn-link {
+    background: none; border: none; color: var(--blue);
+    padding: 4px 6px; font-size: 12px; cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-link:hover { text-decoration: underline; }
+
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── capabilities badges ── */
+  .caps-row {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .caps-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+  .badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    font-weight: 500; letter-spacing: 0.03em;
+  }
+  .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid #b6dfc0; }
+  .badge-red   { background: var(--red-bg);   color: var(--red);   border: 1px solid #f0c0ba; opacity: 0.6; text-decoration: line-through; }
+
+  /* ── toolbar ── */
+  .toolbar {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .toolbar-left { display: flex; gap: 8px; align-items: center; flex: 1; }
+  .toolbar-right { display: flex; gap: 8px; align-items: center; }
+
+  /* ── bulk action bar ── */
+  .bulk-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: var(--blue-bg);
+    border: 1px solid #c2d9ef;
+    border-radius: 3px;
+    padding: 8px 14px;
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+  .bulk-bar .bulk-count { color: var(--blue); font-weight: 600; }
+  .bulk-bar .bulk-spacer { flex: 1; }
+
+  /* ── upload zone ── */
+  .upload-zone {
+    display: none;
+    border: 2px dashed var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--white);
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--blue);
+    background: var(--blue-bg);
+  }
+  .upload-zone .uz-icon { font-size: 22px; margin-bottom: 6px; color: var(--text-muted); }
+  .upload-zone .uz-text { font-size: 13px; color: var(--text-secondary); }
+  .upload-zone .uz-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  input[type="file"] { display: none; }
+
+  /* ── table ── */
+  .table-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--surface2);
+  }
+  .table-toolbar-left { display: flex; gap: 8px; align-items: center; }
+  .table-info { font-size: 12px; color: var(--text-muted); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead { background: var(--surface2); }
+  th {
+    text-align: left;
+    padding: 9px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    user-select: none;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  th.sortable { cursor: pointer; }
+  th.sortable:hover { color: var(--blue); background: var(--blue-bg); }
+  th.sort-asc, th.sort-desc { color: var(--sort-active); }
+  .sort-icon { display: inline-block; margin-left: 4px; font-size: 10px; opacity: 0.5; }
+  th.sort-asc .sort-icon, th.sort-desc .sort-icon { opacity: 1; }
+
+  td {
+    padding: 9px 12px;
+    font-size: 12px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+  tr.selected td { background: var(--selected-bg); }
+  tr.selected td:first-child { border-left: 3px solid var(--selected-border); padding-left: 9px; }
+
+  .cb-cell { width: 36px; text-align: center; }
+  input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--blue); cursor: pointer; }
+
+  .icon-cell { width: 28px; }
+  .name-cell { min-width: 200px; }
+  .size-cell { width: 90px; text-align: right; color: var(--text-secondary); font-family: 'Courier New', monospace; }
+  .date-cell { width: 165px; color: var(--text-secondary); font-family: 'Courier New', monospace; font-size: 11px; }
+  .actions-cell { width: 110px; text-align: right; white-space: nowrap; }
+
+  .file-link { color: var(--blue); cursor: pointer; text-decoration: none; }
+  .file-link:hover { text-decoration: underline; }
+  .folder-link { color: var(--text); cursor: pointer; font-weight: 500; }
+  .folder-link:hover { color: var(--blue); }
+
+  .file-icon-img { font-size: 14px; }
+
+  .action-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 11px; padding: 3px 8px; border-radius: 2px;
+    color: var(--blue); font-family: inherit; font-weight: 500;
+    transition: background 0.1s;
+  }
+  .action-btn:hover { background: var(--blue-bg); }
+  .action-btn.del { color: var(--red); }
+  .action-btn.del:hover { background: var(--red-bg); }
+  .action-sep { color: var(--border); margin: 0 1px; }
+
+  /* ── status ── */
+  .empty-state {
+    text-align: center; padding: 48px 24px;
+    color: var(--text-muted); font-size: 13px;
+  }
+  .empty-state .es-icon { font-size: 32px; margin-bottom: 10px; display: block; opacity: 0.4; }
+
+  /* ── upload queue ── */
+  .upload-item {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 3px; padding: 10px 14px; margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .upload-name { margin-bottom: 4px; color: var(--text); }
+  .upload-status { color: var(--text-muted); font-size: 11px; }
+  .progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+  .progress-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width 0.2s; width: 0%; }
+
+  /* ── hint / info bar ── */
+  .info-bar {
+    font-size: 11px; color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  /* ── transfer panel ── */
+  .transfer-panel {
+    position: fixed; bottom: 0; right: 20px;
+    width: 340px; background: var(--white);
+    border: 1px solid var(--border); border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    box-shadow: var(--shadow-md);
+    z-index: 90;
+    display: none;
+    flex-direction: column;
+  }
+  .transfer-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--header-bg); color: white;
+    border-radius: 4px 4px 0 0;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+  }
+  .transfer-header .th-title { display: flex; align-items: center; gap: 6px; }
+  .transfer-header .th-count {
+    background: var(--accent); color: white;
+    font-size: 10px; padding: 1px 6px; border-radius: 8px;
+  }
+  .transfer-body { max-height: 240px; overflow-y: auto; }
+  .transfer-collapsed .transfer-body { display: none; }
+  .transfer-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 12px;
+  }
+  .transfer-item:last-child { border-bottom: none; }
+  .ti-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+  .ti-icon { font-size: 11px; margin-right: 5px; }
+  .ti-name { font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 210px; }
+  .ti-status { font-size: 11px; color: var(--text-muted); white-space: nowrap; margin-left: 8px; }
+  .ti-status.done  { color: var(--green); }
+  .ti-status.error { color: var(--red); }
+  .ti-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .ti-fill { height: 100%; border-radius: 2px; transition: width 0.15s; width: 0%; }
+  .ti-fill.upload   { background: var(--blue); }
+  .ti-fill.download { background: var(--green); }
+  .ti-fill.error    { background: var(--red); }
+
+  /* ── toasts ── */
+  .toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 6px; z-index: 100; }
+  .toast {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 4px; padding: 10px 14px; font-size: 12px;
+    display: flex; align-items: center; gap: 8px;
+    animation: slideIn 0.2s ease; max-width: 300px;
+    box-shadow: var(--shadow-md);
+  }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error   { border-left: 3px solid var(--red);   }
+  .toast.info    { border-left: 3px solid var(--blue);  }
+  @keyframes slideIn { from { transform: translateX(16px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+</style>
+</head>
+<body>
+
+<!-- OCI Top Bar -->
+<div class="oci-header">
+  <div class="oci-logo">
+    <!-- Oracle Cloud logo mark -->
+    <svg width="28" height="18" viewBox="0 0 28 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="28" height="18" rx="9" fill="#C74634"/>
+      <rect x="3" y="3" width="22" height="12" rx="6" fill="#312d2a"/>
+      <rect x="6" y="5" width="16" height="8" rx="4" fill="#C74634"/>
+    </svg>
+    Oracle Cloud Infrastructure
+    <div class="oci-logo-divider"></div>
+    <span class="oci-logo-sub">Object Storage Browser</span>
+  </div>
+</div>
+
+<!-- Object path breadcrumb -->
+<div class="oci-nav" id="ociNav" style="display:none">
+  <div class="oci-breadcrumb" id="ociBreadcrumb"></div>
+</div>
+
+<main>
+
+  <!-- PAR input -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-header">
+      <span class="card-title">Pre-Authenticated Request</span>
+      <span id="parHint" class="info-bar"></span>
+    </div>
+    <div class="card-body">
+      <div class="par-row">
+        <input type="text" id="parUrl" placeholder="https://objectstorage.<region>.oraclecloud.com/p/<token>/n/<namespace>/b/<bucket>/o/" />
+        <button class="btn btn-primary" onclick="connectPAR()">Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Capabilities -->
+  <div class="caps-row" id="capsRow">
+    <span class="caps-label">Access:</span>
+    <span class="badge" id="capList">LIST</span>
+    <span class="badge" id="capRead">READ</span>
+    <span class="badge" id="capWrite">WRITE</span>
+    <span class="badge" id="capDelete">DELETE</span>
+  </div>
+
+  <!-- Bulk action bar -->
+  <div class="bulk-bar" id="bulkBar">
+    <span class="bulk-count" id="bulkCount">0 selected</span>
+    <button class="btn btn-default" id="bulkDlBtn" onclick="bulkDownload()" style="display:none">⬇ Download</button>
+    <button class="btn btn-danger" id="bulkDelBtn" onclick="bulkDelete()" style="display:none">Delete</button>
+    <div class="bulk-spacer"></div>
+    <button class="btn btn-default" onclick="clearSelection()">Clear selection</button>
+  </div>
+
+  <!-- Upload zone -->
+  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+    <div class="uz-icon">☁</div>
+    <div class="uz-text">Drag and drop files to upload, or <strong>click to browse</strong></div>
+    <div class="uz-sub" id="uploadTarget">Current folder: /</div>
+  </div>
+  <input type="file" id="fileInput" multiple onchange="handleFileSelect(this.files)" />
+
+  <!-- File table -->
+  <div class="table-card" id="tableCard" style="display:none">
+    <div class="table-toolbar">
+      <div class="table-toolbar-left">
+        <button class="btn btn-default" onclick="refresh()">↺ Refresh</button>
+        <span class="table-info" id="tableInfo"></span>
+      </div>
+    </div>
+    <div id="fileList"></div>
+  </div>
+
+  <!-- Transfer panel -->
+<div class="transfer-panel" id="transferPanel">
+  <div class="transfer-header" onclick="toggleTransferPanel()">
+    <div class="th-title">Transfers <span class="th-count" id="transferCount">0</span></div>
+    <span id="transferChevron">▲</span>
+  </div>
+  <div class="transfer-body" id="transferBody"></div>
+</div>
+</main>
+
+<div class="toast-container" id="toasts"></div>
+
+<footer style="border-top:1px solid var(--border);padding:12px 24px;background:var(--white);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text-muted);">
+  <span>Oracle Cloud Infrastructure &mdash; Object Storage Browser</span>
+  <span>Questions? <a href="/cdn-cgi/l/email-protection#8eefeaefe3a0fdf4f7e0e5e1f9fde5e7cee1fcefede2eba0ede1e3" style="color:var(--blue);text-decoration:none;"><span class="__cf_email__" data-cfemail="81e0e5e0ecaff2fbf8efeaeef6f2eae8c1eef3e0e2ede4afe2eeec">[email&#160;protected]</span></a></span>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+let parBase = '';
+let currentPrefix = '';
+let caps = { list: false, read: false, write: false, del: false };
+let selected = new Set();
+let currentObjects = [];
+let currentFolders = [];
+let sortCol = 'name';  // name | size | date
+let sortDir = 'asc';   // asc | desc
+
+// ── Connect ──────────────────────────────────────────────────────────────────
+function normalisePAR(raw) {
+  let url = raw.trim();
+  if (!url.endsWith('/')) url += '/';
+  return url;
+}
+
+async function connectPAR() {
+  const raw = document.getElementById('parUrl').value;
+  if (!raw.includes('/p/') || !raw.includes('/o')) {
+    toast('Doesn\'t look like a valid OCI bucket PAR URL', 'error'); return;
+  }
+  parBase = normalisePAR(raw);
+  document.getElementById('parHint').textContent = 'Detecting capabilities...';
+  await detectCaps();
+  if (!caps.list) { toast('Could not list objects — check PAR URL or CORS policy', 'error'); return; }
+  document.getElementById('parHint').textContent = '';
+  document.getElementById('ociNav').style.display = 'flex';
+  document.getElementById('tableCard').style.display = 'block';
+  if (caps.write) {
+    document.getElementById('uploadZone').style.display = 'block';
+    setupDrop(document.getElementById('uploadZone'));
+  }
+  await listObjects('');
+}
+
+// ── Detect caps ───────────────────────────────────────────────────────────────
+async function detectCaps() {
+  caps = { list: false, read: false, write: false, del: false };
+
+  // Test LIST
+  try {
+    const r = await fetch(parBase + '?fields=name,size,timeModified&limit=1', {signal: AbortSignal.timeout(8000)});
+    if (r.ok) caps.list = true;
+  } catch {}
+
+  // Infer READ from LIST — OCI bucket PARs with list always include read
+  if (caps.list) caps.read = true;
+
+  // Infer WRITE/DELETE from PAR access type in the URL path
+  // OCI PAR access types are encoded in the signed token but not exposed —
+  // instead we do a HEAD on a known OPTIONS preflight to check allowed methods
+  // without writing anything to the bucket.
+  try {
+    const r = await fetch(parBase, { method: 'OPTIONS', signal: AbortSignal.timeout(5000) });
+    const allow = r.headers.get('Access-Control-Allow-Methods') || '';
+    if (allow.includes('PUT'))    caps.write = true;
+    if (allow.includes('DELETE')) caps.del   = true;
+  } catch {}
+
+  // Fallback: if OPTIONS didn't tell us, show buttons anyway and let the
+  // real operation fail gracefully with an error toast.
+  // User can still attempt upload/delete; we just won't hide the buttons.
+  if (!caps.write && !caps.del) {
+    caps.write = true;  // show upload zone — upload will fail with clear error if not permitted
+    caps.del   = true;  // show delete — will fail with clear error if not permitted
+  }
+
+  const row = document.getElementById('capsRow');
+  row.style.display = 'flex';
+  setBadge('capList',   caps.list,  'LIST');
+  setBadge('capRead',   caps.read,  'READ');
+  setBadge('capWrite',  caps.write, 'WRITE');
+  setBadge('capDelete', caps.del,   'DELETE');
+}
+
+function setBadge(id, on, label) {
+  const el = document.getElementById(id);
+  el.textContent = label;
+  el.className = 'badge ' + (on ? 'badge-green' : 'badge-red');
+}
+
+// ── List ──────────────────────────────────────────────────────────────────────
+async function listObjects(prefix) {
+  currentPrefix = prefix;
+  selected.clear();
+  updateBulkBar();
+  updateBreadcrumb(prefix);
+  document.getElementById('uploadTarget').textContent = 'Current folder: /' + prefix;
+
+  const fl = document.getElementById('fileList');
+  fl.innerHTML = '<div class="empty-state"><span class="es-icon">⏳</span>Loading...</div>';
+
+  try {
+    let url = parBase + '?fields=name,size,timeModified&delimiter=/';
+    if (prefix) url += '&prefix=' + encodeURIComponent(prefix);
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+
+    currentFolders = data.prefixes || [];
+    currentObjects = (data.objects || []).filter(o => o.name !== prefix);
+
+    document.getElementById('tableInfo').textContent =
+      `${currentFolders.length} folder${currentFolders.length !== 1 ? 's' : ''}, ${currentObjects.length} object${currentObjects.length !== 1 ? 's' : ''}`;
+
+    renderTable();
+
+  } catch (e) {
+    fl.innerHTML = `<div class="empty-state"><span class="es-icon">⚠</span>Failed to list: ${e.message}</div>`;
+    toast('List failed: ' + e.message, 'error');
+  }
+}
+
+// ── Render table ──────────────────────────────────────────────────────────────
+function renderTable() {
+  const fl = document.getElementById('fileList');
+
+  if (currentFolders.length === 0 && currentObjects.length === 0) {
+    fl.innerHTML = '<div class="empty-state"><span class="es-icon">📭</span>No objects in this location</div>';
+    return;
+  }
+
+  // Sort objects
+  const sorted = [...currentObjects].sort((a, b) => {
+    let va, vb;
+    if (sortCol === 'name')   { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); }
+    if (sortCol === 'size')   { va = a.size || 0;          vb = b.size || 0; }
+    if (sortCol === 'date')   { va = a.timeModified || ''; vb = b.timeModified || ''; }
+    if (va < vb) return sortDir === 'asc' ? -1 : 1;
+    if (va > vb) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  function sortIcon(col) {
+    if (sortCol !== col) return '<span class="sort-icon">⇅</span>';
+    return `<span class="sort-icon">${sortDir === 'asc' ? '↑' : '↓'}</span>`;
+  }
+  function thClass(col) {
+    return 'sortable' + (sortCol === col ? ' sort-' + sortDir : '');
+  }
+
+  let html = `<table>
+    <thead>
+      <tr>
+        <th class="cb-cell"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)" title="Select all"></th>
+        <th class="icon-cell"></th>
+        <th class="${thClass('name')}" onclick="setSort('name')">Name ${sortIcon('name')}</th>
+        <th class="${thClass('size')} size-cell" onclick="setSort('size')">Size ${sortIcon('size')}</th>
+        <th class="${thClass('date')} date-cell" onclick="setSort('date')">Last Modified ${sortIcon('date')}</th>
+        <th class="actions-cell">Actions</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  // Folders always first, no sort applied to them
+  for (const p of currentFolders) {
+    const name = p.replace(currentPrefix, '').replace(/\/$/, '');
+    html += `<tr>
+      <td class="cb-cell"></td>
+      <td class="icon-cell"><span class="file-icon-img">📁</span></td>
+      <td><span class="folder-link" onclick="listObjects('${escH(p)}')">${escH(name)}/</span></td>
+      <td class="size-cell">—</td>
+      <td class="date-cell">—</td>
+      <td class="actions-cell">—</td>
+    </tr>`;
+  }
+
+  for (const obj of sorted) {
+    const name = obj.name.replace(currentPrefix, '');
+    const size = formatSize(obj.size);
+    const date = formatDate(obj.timeModified);
+    const icon = fileIcon(name);
+    const key  = obj.name;
+    const keye = escH(key);
+    const namee = escH(name);
+
+    const sel = selected.has(key);
+
+    let actions = '';
+    if (caps.read) actions += `<button class="action-btn" onclick="downloadFile('${keye}','${namee}')">Download</button>`;
+    if (caps.del)  {
+      if (actions) actions += `<span class="action-sep">|</span>`;
+      actions += `<button class="action-btn del" onclick="deleteSingle('${keye}','${namee}')">Delete</button>`;
+    }
+
+    html += `<tr id="row-${keye}" class="${sel ? 'selected' : ''}" onclick="rowClick(event,'${keye}')">
+      <td class="cb-cell"><input type="checkbox" class="file-cb" data-key="${keye}" ${sel ? 'checked' : ''} onchange="onCbChange(this)" onclick="event.stopPropagation()"></td>
+      <td class="icon-cell"><span class="file-icon-img">${icon}</span></td>
+      <td><span class="file-link" onclick="event.stopPropagation();downloadFile('${keye}','${namee}')" title="${escH(obj.name)}">${namee}</span></td>
+      <td class="size-cell">${size}</td>
+      <td class="date-cell">${date}</td>
+      <td class="actions-cell" onclick="event.stopPropagation()">${actions || '—'}</td>
+    </tr>`;
+  }
+
+  html += '</tbody></table>';
+  fl.innerHTML = html;
+  syncSelectAll();
+}
+
+// ── Sorting ───────────────────────────────────────────────────────────────────
+function setSort(col) {
+  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortCol = col; sortDir = 'asc'; }
+  renderTable();
+}
+
+// ── Selection ─────────────────────────────────────────────────────────────────
+function rowClick(e, key) {
+  const cb = document.querySelector(`.file-cb[data-key="${key}"]`);
+  if (!cb) return;
+  cb.checked = !cb.checked;
+  onCbChange(cb);
+}
+function onCbChange(cb) {
+  const key = cb.dataset.key;
+  if (cb.checked) selected.add(key); else selected.delete(key);
+  const row = document.getElementById('row-' + key);
+  if (row) row.classList.toggle('selected', cb.checked);
+  updateBulkBar(); syncSelectAll();
+}
+function toggleSelectAll(checked) {
+  document.querySelectorAll('.file-cb').forEach(cb => {
+    cb.checked = checked;
+    const key = cb.dataset.key;
+    if (checked) selected.add(key); else selected.delete(key);
+    const row = document.getElementById('row-' + key);
+    if (row) row.classList.toggle('selected', checked);
+  });
+  updateBulkBar();
+}
+function syncSelectAll() {
+  const all = document.querySelectorAll('.file-cb');
+  const sa = document.getElementById('selectAll');
+  if (!sa || all.length === 0) return;
+  const n = [...all].filter(c => c.checked).length;
+  sa.checked = n === all.length;
+  sa.indeterminate = n > 0 && n < all.length;
+}
+function clearSelection() {
+  selected.clear();
+  document.querySelectorAll('.file-cb').forEach(cb => { cb.checked = false; });
+  document.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
+  const sa = document.getElementById('selectAll');
+  if (sa) { sa.checked = false; sa.indeterminate = false; }
+  updateBulkBar();
+}
+function updateBulkBar() {
+  const bar = document.getElementById('bulkBar');
+  const n = selected.size;
+  if (n === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  document.getElementById('bulkCount').textContent = n + ' object' + (n !== 1 ? 's' : '') + ' selected';
+  document.getElementById('bulkDlBtn').style.display = caps.read ? 'inline-flex' : 'none';
+  document.getElementById('bulkDelBtn').style.display = caps.del  ? 'inline-flex' : 'none';
+}
+
+// ── Bulk actions ──────────────────────────────────────────────────────────────
+async function bulkDownload() {
+  for (const key of [...selected]) await downloadFile(key, key.replace(currentPrefix, ''));
+}
+async function bulkDelete() {
+  const keys = [...selected];
+  if (!confirm(`Delete ${keys.length} object(s)? This action is permanent.`)) return;
+  let ok = 0, fail = 0;
+  for (const key of keys) {
+    try {
+      const r = await fetch(parBase + encodeURIComponent(key).replace(/%2F/g, '/'), {method:'DELETE'});
+      (r.ok || r.status === 204) ? ok++ : fail++;
+    } catch { fail++; }
+  }
+  toast(`Deleted ${ok}${fail ? `, ${fail} failed` : ''} object(s)`, fail ? 'error' : 'success');
+  await listObjects(currentPrefix);
+}
+
+// ── Single actions ────────────────────────────────────────────────────────────
+async function downloadFile(fullKey, displayName) {
+  const id = addTransferItem('download', displayName);
+  try {
+    const r = await fetch(parBase + encodeURIComponent(fullKey).replace(/%2F/g, '/'));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+
+    const total = parseInt(r.headers.get('Content-Length') || '0');
+    const reader = r.body.getReader();
+    const chunks = [];
+    let loaded = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      loaded += value.length;
+      if (total > 0) setTransferProgress(id, loaded / total * 100);
+      else setTransferProgress(id, null); // indeterminate
+    }
+
+    const blob = new Blob(chunks);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = displayName;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    finishTransferItem(id, true, formatSize(loaded));
+    toast('Downloaded ' + displayName, 'success');
+  } catch(e) {
+    finishTransferItem(id, false, e.message);
+    toast('Download failed: ' + e.message, 'error');
+  }
+}
+async function deleteSingle(fullKey, displayName) {
+  if (!confirm(`Permanently delete "${displayName}"?`)) return;
+  try {
+    const r = await fetch(parBase + encodeURIComponent(fullKey).replace(/%2F/g, '/'), {method:'DELETE'});
+    if (!r.ok && r.status !== 204) throw new Error('HTTP ' + r.status);
+    toast('Deleted ' + displayName, 'success');
+    await listObjects(currentPrefix);
+  } catch(e) { toast('Delete failed: ' + e.message, 'error'); }
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+function handleFileSelect(files) { for (const f of files) uploadFile(f); }
+function setupDrop(el) {
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+  el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+  el.addEventListener('drop', e => {
+    e.preventDefault(); el.classList.remove('drag-over');
+    for (const f of e.dataTransfer.files) uploadFile(f);
+  });
+}
+async function uploadFile(file) {
+  const key = currentPrefix + file.name;
+  const id = addTransferItem('upload', file.name, file.size);
+  try {
+    await new Promise((res, rej) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', parBase + encodeURIComponent(key).replace(/%2F/g, '/'));
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable) setTransferProgress(id, e.loaded / e.total * 100);
+      };
+      xhr.onload = () => xhr.status < 300 ? res() : rej(new Error('HTTP ' + xhr.status));
+      xhr.onerror = () => rej(new Error('Network error'));
+      xhr.send(file);
+    });
+    finishTransferItem(id, true, formatSize(file.size));
+    toast('Uploaded ' + file.name, 'success');
+    await listObjects(currentPrefix);
+  } catch(e) {
+    finishTransferItem(id, false, e.message);
+    toast('Upload failed: ' + e.message, 'error');
+  }
+}
+
+// ── Breadcrumb ────────────────────────────────────────────────────────────────
+function updateBreadcrumb(prefix) {
+  const bc = document.getElementById('ociBreadcrumb');
+  // extract bucket name from PAR url
+  const bucketMatch = parBase.match(/\/b\/([^/]+)\/o\//);
+  const bucket = bucketMatch ? bucketMatch[1] : 'bucket';
+  let html = `<a onclick="listObjects('')">${escH(bucket)}</a>`;
+  if (prefix) {
+    const parts = prefix.replace(/\/$/, '').split('/');
+    let built = '';
+    parts.forEach((p, i) => {
+      built += p + '/'; const snap = built;
+      html += `<span class="sep"> / </span>`;
+      if (i === parts.length - 1) html += `<span class="current">${escH(p)}</span>`;
+      else html += `<a onclick="listObjects('${escH(snap)}')">${escH(p)}</a>`;
+    });
+  }
+  bc.innerHTML = html;
+}
+
+function refresh() { listObjects(currentPrefix); }
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('en-AU', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12: false });
+}
+function formatSize(bytes) {
+  if (bytes == null) return '—';
+  if (bytes === 0) return '0 B';
+  const u = ['B','KB','MB','GB','TB'];
+  const i = Math.floor(Math.log(bytes)/Math.log(1024));
+  return (bytes/Math.pow(1024,i)).toFixed(i?1:0)+' '+u[i];
+}
+function fileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  const map = { pdf:'📄',png:'🖼',jpg:'🖼',jpeg:'🖼',gif:'🖼',svg:'🖼',webp:'🖼',zip:'🗜',gz:'🗜',tar:'🗜',json:'📋',yaml:'📋',yml:'📋',xml:'📋',sh:'⚙',py:'🐍',js:'📜',ts:'📜',tf:'🏗',mp4:'🎬',mov:'🎬',mp3:'🎵',csv:'📊',xlsx:'📊',xls:'📊',txt:'📝',md:'📝',log:'📝' };
+  return map[ext] || '📦';
+}
+function escH(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// ── Transfer panel ───────────────────────────────────────────────────────────
+let transferItems = {};
+let transferTotal = 0;
+let panelCollapsed = false;
+
+function addTransferItem(type, name, size) {
+  const id = 'tx-' + Date.now() + Math.random().toString(36).slice(2);
+  transferTotal++;
+  document.getElementById('transferCount').textContent = transferTotal;
+  document.getElementById('transferPanel').style.display = 'flex';
+
+  const icon = type === 'upload' ? '⬆' : '⬇';
+  const sizeStr = size ? ' (' + formatSize(size) + ')' : '';
+  const div = document.createElement('div');
+  div.className = 'transfer-item';
+  div.id = id;
+  div.innerHTML = `
+    <div class="ti-row">
+      <span class="ti-name"><span class="ti-icon">${icon}</span>${escH(name)}${escH(sizeStr)}</span>
+      <span class="ti-status" id="ts-${id}">0%</span>
+    </div>
+    <div class="ti-bar"><div class="ti-fill ${type}" id="tf-${id}"></div></div>`;
+  document.getElementById('transferBody').prepend(div);
+  transferItems[id] = { type, name };
+  return id;
+}
+
+function setTransferProgress(id, pct) {
+  const fill = document.getElementById('tf-' + id);
+  const status = document.getElementById('ts-' + id);
+  if (!fill) return;
+  if (pct === null) {
+    fill.style.width = '60%';
+    fill.style.opacity = '0.6';
+    if (status) status.textContent = '…';
+  } else {
+    fill.style.width = pct.toFixed(0) + '%';
+    if (status) status.textContent = pct.toFixed(0) + '%';
+  }
+}
+
+function finishTransferItem(id, success, detail) {
+  const fill = document.getElementById('tf-' + id);
+  const status = document.getElementById('ts-' + id);
+  if (fill) {
+    fill.style.width = '100%';
+    fill.style.background = success ? 'var(--green)' : 'var(--red)';
+  }
+  if (status) {
+    status.textContent = success ? ('✓ ' + (detail || 'Done')) : '✗ Failed';
+    status.className = 'ti-status ' + (success ? 'done' : 'error');
+  }
+  // Auto-remove successful items after 5s
+  if (success) {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+      transferTotal = Math.max(0, transferTotal - 1);
+      document.getElementById('transferCount').textContent = transferTotal;
+      if (transferTotal === 0) document.getElementById('transferPanel').style.display = 'none';
+    }, 5000);
+  }
+}
+
+function toggleTransferPanel() {
+  panelCollapsed = !panelCollapsed;
+  const panel = document.getElementById('transferPanel');
+  const chevron = document.getElementById('transferChevron');
+  panel.classList.toggle('transfer-collapsed', panelCollapsed);
+  chevron.textContent = panelCollapsed ? '▼' : '▲';
+}
+
+function toast(msg, type='info') {
+  const tc = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  tc.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+</script>
+</body>
+</html>
