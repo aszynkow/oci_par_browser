@@ -59,7 +59,7 @@ You create a **PAR** (Pre-Authenticated Request) on an OCI bucket, share the HTM
 
 ### 1. Download the tool
 
-Download [`oci-par-browser.html`](./oci-par-browser.html) — that's the entire app.
+Download **[oci-par-browser.html](https://raw.githubusercontent.com/<your-org>/<your-repo>/main/oci-par-browser.html)** — that's the entire app. (Right-click → Save Link As, or click to open then Ctrl+S)
 
 ### 2. Create a PAR on your OCI bucket
 
