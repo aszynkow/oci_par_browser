@@ -78,7 +78,6 @@ Or via OCI CLI:
 ```bash
 # Read-only PAR (list + download)
 oci os preauth-request create \
-  --namespace <namespace> \
   --bucket-name <bucket> \
   --name "customer-share-$(date +%Y%m%d)" \
   --access-type AnyObjectRead \
@@ -86,30 +85,13 @@ oci os preauth-request create \
 
 # Read + Write PAR (list + download + upload)
 oci os preauth-request create \
-  --namespace <namespace> \
   --bucket-name <bucket> \
   --name "customer-share-$(date +%Y%m%d)" \
   --access-type AnyObjectReadWrite \
   --time-expires $(date -u -v+7d +%Y-%m-%dT%H:%M:%SZ)
 ```
 
-### 3. Set CORS on the bucket
-
-Required for the browser to make cross-origin requests to OCI:
-
-```bash
-oci os bucket update \
-  --namespace <namespace> \
-  --bucket-name <bucket> \
-  --cors-rules '[{
-    "allowedOrigins": ["*"],
-    "allowedMethods": ["GET","HEAD","PUT","DELETE"],
-    "allowedHeaders": ["*"],
-    "maxAgeSeconds": 3600
-  }]'
-```
-
-### 4. Open the tool
+### 3. Open the tool
 
 Double-click `oci-par-browser.html` in your browser, paste the PAR URL, click **Connect**.
 
